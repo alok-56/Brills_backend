@@ -1,0 +1,529 @@
+# Expense API Payload Documentation
+
+## 1. Create Expense
+**Endpoint:** `POST /api/expenses/create`
+
+### Request Payload
+```json
+{
+  "expenseName": "Monthly Electricity Bill",
+  "hotelId": "507f1f77bcf86cd799439011",
+  "category": "Utilities",
+  "amount": 5000,
+  "paymentMethod": "Bank Transfer",
+  "expenseDate": "2024-01-15T00:00:00.000Z",
+  "month": 1,
+  "year": 2024,
+  "notes": "Monthly electricity bill for main building",
+  "attachmentUrl": "https://example.com/receipts/bill_jan_2024.pdf",
+  "status": "Approved"
+}
+```
+
+### Field Descriptions
+| Field | Type | Required | Description | Valid Values |
+|-------|------|----------|-------------|--------------|
+| `expenseName` | String | Yes | Name of the expense | Any string |
+| `hotelId` | ObjectId | Yes | Reference to Hotel document | Valid MongoDB ObjectId |
+| `category` | String | No | Expense category | "Utilities", "Maintenance", "Salaries", "Supplies", "Marketing", "Transportation", "Rent", "Other" |
+| `amount` | Number | Yes | Expense amount | Positive number |
+| `paymentMethod` | String | No | Payment method used | "Cash", "Bank Transfer", "Card", "UPI", "Cheque" |
+| `expenseDate` | Date | Yes | Date of expense | ISO 8601 date string |
+| `month` | Number | Yes | Month of expense | 1-12 |
+| `year` | Number | Yes | Year of expense | Valid year |
+| `notes` | String | No | Additional notes | Any string |
+| `attachmentUrl` | String | No | URL to receipt/attachment | Valid URL |
+| `status` | String | No | Expense status | "Pending", "Approved", "Rejected" |
+
+### Response
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "Expense Created Successfully",
+  "data": {
+    "_id": "507f1f77bcf86cd799439012",
+    "expenseName": "Monthly Electricity Bill",
+    "hotelId": "507f1f77bcf86cd799439011",
+    "category": "Utilities",
+    "amount": 5000,
+    "paymentMethod": "Bank Transfer",
+    "expenseDate": "2024-01-15T00:00:00.000Z",
+    "month": 1,
+    "year": 2024,
+    "notes": "Monthly electricity bill for main building",
+    "attachmentUrl": "https://example.com/receipts/bill_jan_2024.pdf",
+    "status": "Approved",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+---
+
+## 2. Get All Expenses
+**Endpoint:** `GET /api/expenses/all`
+
+### Query Parameters
+```
+/api/expenses/all?page=1&limit=10&hotelId=507f1f77bcf86cd799439011&category=Utilities&paymentMethod=Cash&status=Approved&month=1&year=2024&startDate=2024-01-01&endDate=2024-01-31&sortBy=expenseDate&sortOrder=desc
+```
+
+### Query Parameters Description
+| Parameter | Type | Required | Description | Example |
+|-----------|------|----------|-------------|---------|
+| `page` | Number | No | Page number (default: 1) | `1` |
+| `limit` | Number | No | Items per page (default: 10) | `10` |
+| `hotelId` | ObjectId | No | Filter by hotel ID | `507f1f77bcf86cd799439011` |
+| `category` | String | No | Filter by category | `Utilities` |
+| `paymentMethod` | String | No | Filter by payment method | `Cash` |
+| `status` | String | No | Filter by status | `Approved` |
+| `month` | Number | No | Filter by month | `1` |
+| `year` | Number | No | Filter by year | `2024` |
+| `startDate` | Date | No | Filter from date | `2024-01-01` |
+| `endDate` | Date | No | Filter to date | `2024-01-31` |
+| `sortBy` | String | No | Sort field (default: expenseDate) | `amount` |
+| `sortOrder` | String | No | Sort order (default: desc) | `asc` |
+
+### Response
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "Expenses Retrieved Successfully",
+  "data": [
+    {
+      "_id": "507f1f77bcf86cd799439012",
+      "expenseName": "Monthly Electricity Bill",
+      "hotelId": {
+        "_id": "507f1f77bcf86cd799439011",
+        "name": "Grand Hotel"
+      },
+      "category": "Utilities",
+      "amount": 5000,
+      "paymentMethod": "Bank Transfer",
+      "expenseDate": "2024-01-15T00:00:00.000Z",
+      "month": 1,
+      "year": 2024,
+      "notes": "Monthly electricity bill for main building",
+      "attachmentUrl": "https://example.com/receipts/bill_jan_2024.pdf",
+      "status": "Approved",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 5,
+    "totalExpenses": 50,
+    "hasNextPage": true,
+    "hasPrevPage": false
+  }
+}
+```
+
+---
+
+## 3. Get Expense by ID
+**Endpoint:** `GET /api/expenses/:id`
+
+### URL Parameters
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | ObjectId | Yes | Expense ID |
+
+### Response
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "Expense Retrieved Successfully",
+  "data": {
+    "_id": "507f1f77bcf86cd799439012",
+    "expenseName": "Monthly Electricity Bill",
+    "hotelId": {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Grand Hotel"
+    },
+    "category": "Utilities",
+    "amount": 5000,
+    "paymentMethod": "Bank Transfer",
+    "expenseDate": "2024-01-15T00:00:00.000Z",
+    "month": 1,
+    "year": 2024,
+    "notes": "Monthly electricity bill for main building",
+    "attachmentUrl": "https://example.com/receipts/bill_jan_2024.pdf",
+    "status": "Approved",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+---
+
+## 4. Update Expense (Full Update)
+**Endpoint:** `PUT /api/expenses/:id`
+
+### Request Payload
+```json
+{
+  "expenseName": "Updated Monthly Electricity Bill",
+  "hotelId": "507f1f77bcf86cd799439011",
+  "category": "Utilities",
+  "amount": 5500,
+  "paymentMethod": "Bank Transfer",
+  "expenseDate": "2024-01-15T00:00:00.000Z",
+  "month": 1,
+  "year": 2024,
+  "notes": "Updated monthly electricity bill for main building",
+  "attachmentUrl": "https://example.com/receipts/bill_jan_2024_updated.pdf",
+  "status": "Approved"
+}
+```
+
+### Response
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "Expense Updated Successfully",
+  "data": {
+    "_id": "507f1f77bcf86cd799439012",
+    "expenseName": "Updated Monthly Electricity Bill",
+    "hotelId": {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Grand Hotel"
+    },
+    "category": "Utilities",
+    "amount": 5500,
+    "paymentMethod": "Bank Transfer",
+    "expenseDate": "2024-01-15T00:00:00.000Z",
+    "month": 1,
+    "year": 2024,
+    "notes": "Updated monthly electricity bill for main building",
+    "attachmentUrl": "https://example.com/receipts/bill_jan_2024_updated.pdf",
+    "status": "Approved",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T11:30:00.000Z"
+  }
+}
+```
+
+---
+
+## 5. Patch Expense (Partial Update)
+**Endpoint:** `PATCH /api/expenses/:id`
+
+### Request Payload (Update only specific fields)
+```json
+{
+  "amount": 6000,
+  "notes": "Amount increased due to additional charges",
+  "status": "Approved"
+}
+```
+
+### Response
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "Expense Updated Successfully",
+  "data": {
+    "_id": "507f1f77bcf86cd799439012",
+    "expenseName": "Monthly Electricity Bill",
+    "hotelId": {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Grand Hotel"
+    },
+    "category": "Utilities",
+    "amount": 6000,
+    "paymentMethod": "Bank Transfer",
+    "expenseDate": "2024-01-15T00:00:00.000Z",
+    "month": 1,
+    "year": 2024,
+    "notes": "Amount increased due to additional charges",
+    "attachmentUrl": "https://example.com/receipts/bill_jan_2024.pdf",
+    "status": "Approved",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T12:30:00.000Z"
+  }
+}
+```
+
+---
+
+## 6. Delete Expense
+**Endpoint:** `DELETE /api/expenses/:id`
+
+### URL Parameters
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | ObjectId | Yes | Expense ID |
+
+### Response
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "Expense Deleted Successfully",
+  "data": {
+    "_id": "507f1f77bcf86cd799439012",
+    "expenseName": "Monthly Electricity Bill",
+    "hotelId": "507f1f77bcf86cd799439011",
+    "category": "Utilities",
+    "amount": 5000,
+    "paymentMethod": "Bank Transfer",
+    "expenseDate": "2024-01-15T00:00:00.000Z",
+    "month": 1,
+    "year": 2024,
+    "notes": "Monthly electricity bill for main building",
+    "attachmentUrl": "https://example.com/receipts/bill_jan_2024.pdf",
+    "status": "Approved",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+---
+
+## 7. Bulk Delete Expenses
+**Endpoint:** `DELETE /api/expenses/bulk/delete`
+
+### Request Payload
+```json
+{
+  "ids": [
+    "507f1f77bcf86cd799439012",
+    "507f1f77bcf86cd799439013",
+    "507f1f77bcf86cd799439014"
+  ]
+}
+```
+
+### Response
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "3 Expenses Deleted Successfully",
+  "data": {
+    "deletedCount": 3
+  }
+}
+```
+
+---
+
+## 8. Get Expense Statistics
+**Endpoint:** `GET /api/expenses/stats/summary`
+
+### Query Parameters
+```
+/api/expenses/stats/summary?hotelId=507f1f77bcf86cd799439011&month=1&year=2024
+```
+
+### Response
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "Expense Statistics Retrieved Successfully",
+  "data": {
+    "summary": {
+      "totalAmount": 50000,
+      "totalExpenses": 25,
+      "averageAmount": 2000,
+      "maxAmount": 10000,
+      "minAmount": 500
+    },
+    "categoryBreakdown": [
+      {
+        "_id": "Utilities",
+        "totalAmount": 15000,
+        "count": 5
+      },
+      {
+        "_id": "Maintenance",
+        "totalAmount": 12000,
+        "count": 8
+      },
+      {
+        "_id": "Salaries",
+        "totalAmount": 10000,
+        "count": 3
+      }
+    ],
+    "paymentMethodBreakdown": [
+      {
+        "_id": "Bank Transfer",
+        "totalAmount": 25000,
+        "count": 12
+      },
+      {
+        "_id": "Cash",
+        "totalAmount": 15000,
+        "count": 8
+      },
+      {
+        "_id": "Card",
+        "totalAmount": 10000,
+        "count": 5
+      }
+    ]
+  }
+}
+```
+
+---
+
+## 9. Get Expenses by Date Range
+**Endpoint:** `GET /api/expenses/range/dates`
+
+### Query Parameters
+```
+/api/expenses/range/dates?startDate=2024-01-01&endDate=2024-01-31&hotelId=507f1f77bcf86cd799439011
+```
+
+### Response
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "Expenses Retrieved Successfully",
+  "data": {
+    "expenses": [
+      {
+        "_id": "507f1f77bcf86cd799439012",
+        "expenseName": "Monthly Electricity Bill",
+        "hotelId": {
+          "_id": "507f1f77bcf86cd799439011",
+          "name": "Grand Hotel"
+        },
+        "category": "Utilities",
+        "amount": 5000,
+        "paymentMethod": "Bank Transfer",
+        "expenseDate": "2024-01-15T00:00:00.000Z",
+        "month": 1,
+        "year": 2024,
+        "notes": "Monthly electricity bill for main building",
+        "attachmentUrl": "https://example.com/receipts/bill_jan_2024.pdf",
+        "status": "Approved",
+        "createdAt": "2024-01-15T10:30:00.000Z",
+        "updatedAt": "2024-01-15T10:30:00.000Z"
+      }
+    ],
+    "totalAmount": 25000,
+    "totalCount": 10
+  }
+}
+```
+
+---
+
+## 10. Update Expense Status
+**Endpoint:** `PATCH /api/expenses/:id/status`
+
+### Request Payload
+```json
+{
+  "status": "Rejected"
+}
+```
+
+### Response
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "Expense Status Updated Successfully",
+  "data": {
+    "_id": "507f1f77bcf86cd799439012",
+    "expenseName": "Monthly Electricity Bill",
+    "hotelId": {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Grand Hotel"
+    },
+    "category": "Utilities",
+    "amount": 5000,
+    "paymentMethod": "Bank Transfer",
+    "expenseDate": "2024-01-15T00:00:00.000Z",
+    "month": 1,
+    "year": 2024,
+    "notes": "Monthly electricity bill for main building",
+    "attachmentUrl": "https://example.com/receipts/bill_jan_2024.pdf",
+    "status": "Rejected",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T13:30:00.000Z"
+  }
+}
+```
+
+---
+
+## Error Responses
+
+### Validation Error
+```json
+{
+  "status": false,
+  "code": 403,
+  "message": "expenseName is required"
+}
+```
+
+### Resource Not Found
+```json
+{
+  "status": false,
+  "code": 404,
+  "message": "Expense not found"
+}
+```
+
+### Invalid ID Format
+```json
+{
+  "status": false,
+  "code": 400,
+  "message": "Invalid expense ID format"
+}
+```
+
+### Server Error
+```json
+{
+  "status": false,
+  "code": 500,
+  "message": "Internal server error"
+}
+```
+
+---
+
+## Data Types Reference
+
+### Expense Categories
+- `"Utilities"`
+- `"Maintenance"`
+- `"Salaries"`
+- `"Supplies"`
+- `"Marketing"`
+- `"Transportation"`
+- `"Rent"`
+- `"Other"`
+
+### Payment Methods
+- `"Cash"`
+- `"Bank Transfer"`
+- `"Card"`
+- `"UPI"`
+- `"Cheque"`
+
+### Expense Status
+- `"Pending"`
+- `"Approved"`
+- `"Rejected"`

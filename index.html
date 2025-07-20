@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking Form</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f0f0;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    h2 {
+      text-align: center;
+    }
+    label {
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Hotel Room Booking</h2>
+    <form id="bookingForm">
+      <label for="branchId">Branch ID</label>
+      <input type="text" id="branchId" name="BranchId" value="67f18068eaa6a72e5385f319" readonly>
+
+      <label for="roomId">Room ID</label>
+      <input type="text" id="roomId" name="RoomId" value="67f20961c562db1e6d85a217" readonly>
+
+      <label for="checkinDate">Check-in Date</label>
+      <input type="date" id="checkinDate" name="CheckinDate" value="2025-05-10" required>
+
+      <label for="checkoutDate">Check-out Date</label>
+      <input type="date" id="checkoutDate" name="CheckOutDate" value="2025-05-12" required>
+
+      <label for="name">Name</label>
+      <input type="text" id="name" name="UserInformation[Name]" value="John Doe" required>
+
+      <label for="phoneNumber">Phone Number</label>
+      <input type="tel" id="phoneNumber" name="UserInformation[Phonenumber]" value="9876543210" required>
+
+      <label for="age">Age</label>
+      <input type="number" id="age" name="UserInformation[Age]" value="30" required>
+
+      <label for="numberOfChildren">Number of Children</label>
+      <input type="number" id="numberOfChildren" name="Numberofchildren" value="2" required>
+
+      <label for="tax">Tax</label>
+      <input type="number" id="tax" name="Tax" value="100" required>
+
+      <label for="totalAmount">Total Amount</label>
+      <input type="number" id="totalAmount" name="TotalAmount" value="5000" required>
+
+      <label for="cancelFee">Cancellation Fee</label>
+      <input type="number" id="cancelFee" name="Cancelfee" value="500" required>
+
+      <button type="submit">Proceed to Payment</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('bookingForm').addEventListener('submit', async function (e) {
+      e.preventDefault(); // Prevent the form from submitting the default way
+
+      // Collect form data
+      const formData = new FormData(this);
+      const data = {};
+      formData.forEach((value, key) => {
+        let keys = key.split('[');
+        if (keys.length > 1) {
+          if (!data[keys[0]]) data[keys[0]] = {};
+          data[keys[0]][keys[1].slice(0, -1)] = value; // Extract nested fields like UserInformation[Name]
+        } else {
+          data[key] = value;
+        }
+      });
+
+      // Send POST request to the backend to create a booking and initiate payment
+      try {
+        const response = await fetch('http://localhost:9100/api/v1/booking/room/pay', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+        if (result.status && result.code === 200) {
+          window.location.href = result.data
+        } else {
+          alert("Booking failed. Please try again.");
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert("An error occurred while processing your booking.");
+      }
+    });
+  </script>
+</body>
+</html>

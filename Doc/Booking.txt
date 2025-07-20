@@ -1,0 +1,379 @@
+# Booking API Payloads
+
+## 1. Online Booking Payload
+
+### Endpoint: `POST /api/v1/booking/book-room`
+
+### Request Body:
+```json
+{
+  "hotelId": "64a7b8c9d1e2f3a4b5c6d7e8",
+  "roomId": [
+    "64a7b8c9d1e2f3a4b5c6d7e9",
+    "64a7b8c9d1e2f3a4b5c6d7f0"
+  ],
+  "userId": "64a7b8c9d1e2f3a4b5c6d7f1",
+  "userInfo": [
+    {
+      "name": "John Doe",
+      "phone": "9876543210",
+      "email": "john.doe@example.com",
+      "age": 30,
+      "gender": "Male"
+    },
+    {
+      "name": "Jane Doe",
+      "phone": "9876543211",
+      "email": "jane.doe@example.com",
+      "age": 28,
+      "gender": "Female"
+    }
+  ],
+  "guests": {
+    "adults": 2,
+    "children": 1
+  },
+  "checkInDate": "2024-01-15",
+  "checkOutDate": "2024-01-18",
+  "addOns": [
+    {
+      "serviceName": "Airport Transfer",
+      "cost": 500
+    },
+    {
+      "serviceName": "Extra Bed",
+      "cost": 800
+    }
+  ],
+  "couponCode": "WELCOME10",
+  "discountAmount": 200,
+  "taxAmount": 450,
+  "totalAmount": 5500,
+  "pendingAmount": 5500
+}
+```
+
+### Response (Success):
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "success",
+  "data": "https://api.phonepe.com/apis/hermes/pg/v1/pay/redirect?id=M22072024095735716434353"
+}
+```
+
+### Response (Error):
+```json
+{
+  "status": false,
+  "code": 400,
+  "message": "Error during payment initiation",
+  "data": "Invalid request parameters"
+}
+```
+
+---
+
+## 2. Offline Booking Payload
+
+### Endpoint: `POST /api/v1/booking/offline-booking`
+
+### Request Body:
+```json
+{
+  "hotelId": "64a7b8c9d1e2f3a4b5c6d7e8",
+  "roomId": [
+    "64a7b8c9d1e2f3a4b5c6d7e9"
+  ],
+  "userId": "64a7b8c9d1e2f3a4b5c6d7f1",
+  "userInfo": [
+    {
+      "name": "Alice Smith",
+      "phone": "9876543212",
+      "email": "alice.smith@example.com",
+      "age": 35,
+      "gender": "Female"
+    }
+  ],
+  "guests": {
+    "adults": 1,
+    "children": 0
+  },
+  "checkInDate": "2024-01-15",
+  "checkOutDate": "2024-01-17",
+  "addOns": [
+    {
+      "serviceName": "Late Checkout",
+      "cost": 300
+    }
+  ],
+  "couponCode": "",
+  "discountAmount": 0,
+  "taxAmount": 270,
+  "totalAmount": 3300
+}
+```
+
+### Response (Success):
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "Offline booking created successfully",
+  "data": {
+    "bookingId": "1a2b3c4d5e6f7g8h9i0j",
+    "hotelId": "64a7b8c9d1e2f3a4b5c6d7e8",
+    "roomId": ["64a7b8c9d1e2f3a4b5c6d7e9"],
+    "userId": "64a7b8c9d1e2f3a4b5c6d7f1",
+    "userInfo": [
+      {
+        "name": "Alice Smith",
+        "phone": "9876543212",
+        "email": "alice.smith@example.com",
+        "age": 35,
+        "gender": "Female"
+      }
+    ],
+    "guests": {
+      "adults": 1,
+      "children": 0
+    },
+    "checkInDate": "2024-01-15T00:00:00.000Z",
+    "checkOutDate": "2024-01-17T00:00:00.000Z",
+    "stayDuration": 2,
+    "bookingType": "Offline",
+    "addOns": [
+      {
+        "serviceName": "Late Checkout",
+        "cost": 300
+      }
+    ],
+    "couponCode": "",
+    "discountAmount": 0,
+    "taxAmount": 270,
+    "totalAmount": 3300,
+    "pendingAmount": 0,
+    "amountPaid": 3300,
+    "paymentDetails": {
+      "method": "Cash",
+      "status": "paid"
+    },
+    "status": "booked",
+    "statusHistory": [
+      {
+        "status": "booked",
+        "timestamp": "2024-01-14T10:30:00.000Z",
+        "note": "Offline booking created"
+      }
+    ],
+    "cancellation": {
+      "isCancelled": false,
+      "cancelFee": 0,
+      "refundAmount": 0,
+      "refundStatus": "not_applicable"
+    },
+    "createdAt": "2024-01-14T10:30:00.000Z",
+    "updatedAt": "2024-01-14T10:30:00.000Z"
+  }
+}
+```
+
+---
+
+## 3. Payment Validation Payload
+
+### Endpoint: `GET /api/v1/booking/payment/validate/:merchantTransactionId`
+
+### URL Parameters:
+- `merchantTransactionId`: The transaction ID returned from payment gateway
+
+### Response (Success):
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "Payment Success",
+  "data": {
+    "code": "PAYMENT_SUCCESS",
+    "message": "Your payment is successful.",
+    "data": {
+      "merchantId": "M22072024095735716434353",
+      "merchantTransactionId": "1a2b3c4d5e6f7g8h9i0j",
+      "transactionId": "T2407240957357164343535",
+      "amount": 550000,
+      "state": "COMPLETED",
+      "responseCode": "SUCCESS"
+    }
+  }
+}
+```
+
+---
+
+## 4. Get Bookings Payload
+
+### Endpoint: `GET /api/v1/booking/get-bookings`
+
+### Query Parameters:
+- `status` (optional): Filter by booking status (`pending`, `booked`, `cancelled`, `checkin`, `checkout`, etc.)
+
+### Example: `GET /api/v1/booking/get-bookings?status=booked`
+
+### Response:
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "Bookings fetched successfully",
+  "data": [
+    {
+      "_id": "64a7b8c9d1e2f3a4b5c6d7f2",
+      "bookingId": "1a2b3c4d5e6f7g8h9i0j",
+      "hotelId": {
+        "_id": "64a7b8c9d1e2f3a4b5c6d7e8",
+        "name": "Grand Hotel",
+        "address": "123 Main Street"
+      },
+      "roomId": [
+        {
+          "_id": "64a7b8c9d1e2f3a4b5c6d7e9",
+          "roomType": "Deluxe Room",
+          "price": 2500
+        }
+      ],
+      "userId": {
+        "_id": "64a7b8c9d1e2f3a4b5c6d7f1",
+        "name": "John Doe"
+      },
+      "userInfo": [
+        {
+          "name": "John Doe",
+          "phone": "9876543210",
+          "email": "john.doe@example.com",
+          "age": 30,
+          "gender": "Male"
+        }
+      ],
+      "guests": {
+        "adults": 2,
+        "children": 1
+      },
+      "checkInDate": "2024-01-15T00:00:00.000Z",
+      "checkOutDate": "2024-01-18T00:00:00.000Z",
+      "stayDuration": 3,
+      "bookingType": "Online",
+      "status": "booked",
+      "totalAmount": 5500,
+      "paymentDetails": {
+        "paymentId": "64a7b8c9d1e2f3a4b5c6d7f3",
+        "method": "UPI",
+        "status": "paid"
+      }
+    }
+  ]
+}
+```
+
+---
+
+## 5. Update Booking Status Payload
+
+### Endpoint: `PATCH /api/v1/booking/update-status`
+
+### Query Parameters:
+- `status`: New status (`checkin`, `checkout`, `cancelled`, etc.)
+- `bookingid`: Booking ID to update
+- `extracharge` (optional): Additional charges for checkout
+
+### Example: `PATCH /api/v1/booking/update-status?status=checkout&bookingid=64a7b8c9d1e2f3a4b5c6d7f2&extracharge=500`
+
+### Response:
+```json
+{
+  "status": true,
+  "code": 200,
+  "message": "Booking status updated successfully",
+  "data": {
+    "_id": "64a7b8c9d1e2f3a4b5c6d7f2",
+    "bookingId": "1a2b3c4d5e6f7g8h9i0j",
+    "status": "checkout",
+    "statusHistory": [
+      {
+        "status": "pending",
+        "timestamp": "2024-01-14T10:30:00.000Z",
+        "note": "Booking created"
+      },
+      {
+        "status": "booked",
+        "timestamp": "2024-01-14T10:35:00.000Z",
+        "note": "Payment successful"
+      },
+      {
+        "status": "checkin",
+        "timestamp": "2024-01-15T14:00:00.000Z",
+        "note": "Status updated to checkin"
+      },
+      {
+        "status": "checkout",
+        "timestamp": "2024-01-18T11:00:00.000Z",
+        "note": "Status updated to checkout"
+      }
+    ],
+    "totalAmount": 6000,
+    "pendingAmount": 500
+  }
+}
+```
+
+---
+
+## 6. Field Descriptions
+
+### Required Fields:
+- `hotelId`: ObjectId of the hotel
+- `roomId`: Array of room ObjectIds
+- `userInfo`: Array of user information objects
+- `checkInDate`: Check-in date (YYYY-MM-DD format)
+- `checkOutDate`: Check-out date (YYYY-MM-DD format)
+- `totalAmount`: Total booking amount
+
+### Optional Fields:
+- `userId`: Registered user ID (if user is registered)
+- `guests`: Number of adults and children
+- `addOns`: Additional services with costs
+- `couponCode`: Discount coupon code
+- `discountAmount`: Discount amount applied
+- `taxAmount`: Tax amount
+- `pendingAmount`: Amount pending payment
+
+### Auto-Generated Fields:
+- `bookingId`: Unique booking identifier
+- `stayDuration`: Calculated number of nights
+- `bookingType`: "Online" or "Offline"
+- `status`: Initial status based on booking type
+- `statusHistory`: Array of status changes
+- `paymentDetails`: Payment information object
+- `cancellation`: Cancellation details object
+
+---
+
+## 7. Validation Rules
+
+### User Info Validation:
+- `name`: Required, minimum 2 characters
+- `phone`: Required, valid phone number format
+- `email`: Optional, valid email format
+- `age`: Optional, number between 1-120
+- `gender`: Optional, enum values
+
+### Date Validation:
+- `checkInDate`: Must be today or future date
+- `checkOutDate`: Must be after check-in date
+- Maximum stay duration: 30 days
+
+### Amount Validation:
+- `totalAmount`: Must be positive number
+- `taxAmount`: Must be non-negative
+- `discountAmount`: Must be non-negative
+- `pendingAmount`: Must not exceed total amount
