@@ -62,6 +62,11 @@ const HotelSchema = new mongoose.Schema(
     fireSafety: { type: Boolean },
     firstAidKit: { type: Boolean },
     security24h: { type: Boolean },
+
+    isactive: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );

@@ -93,6 +93,7 @@ const BookingSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
+        "collectPayment",
         "pending",
         "cancelled",
         "failed",
@@ -111,7 +112,7 @@ const BookingSchema = new mongoose.Schema(
         note: String,
       },
     ],
-
+    RoomNo: [],
     cancellation: {
       isCancelled: { type: Boolean, default: false },
       cancelledBy: { type: String },

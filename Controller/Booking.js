@@ -12,6 +12,7 @@ const mongoose = require("mongoose");
 const Usermodel = require("../Model/User");
 const BookingModel = require("../Model/Booking");
 const moment = require("moment");
+const Cashmodel = require("../Model/Cash");
 
 // Create Payment Payload
 const createPaymentPayload = (
@@ -548,7 +549,7 @@ const OfflineBooking = async (req, res, next) => {
 // Update Booking Status
 const UpdateBookingstatus = async (req, res, next) => {
   try {
-    let { status, bookingid } = req.query;
+    let { status, bookingid, paymentMethod, roomno } = req.query;
 
     let booking = await Bookingmodal.findById(bookingid);
     if (!booking) {
@@ -557,6 +558,7 @@ const UpdateBookingstatus = async (req, res, next) => {
 
     // Validate status
     const validStatuses = [
+      "collectPayment",
       "pending",
       "cancelled",
       "failed",
@@ -570,12 +572,14 @@ const UpdateBookingstatus = async (req, res, next) => {
     }
 
     // Update booking status
-    booking.status = status;
-    booking.statusHistory.push({
-      status: status,
-      timestamp: new Date(),
-      note: `Status updated to ${status}`,
-    });
+    if (status !== "collectPayment") {
+      booking.status = status;
+      booking.statusHistory.push({
+        status: status,
+        timestamp: new Date(),
+        note: `Status updated to ${status}`,
+      });
+    }
 
     // Handle cancellation
     if (status === "cancelled") {
@@ -585,15 +589,50 @@ const UpdateBookingstatus = async (req, res, next) => {
       // You might want to calculate cancel fee and refund amount here
     }
 
-    // Handle checkout with extra charges
-    if (status === "checkout") {
+    if (status === "collectPayment") {
       let payment = await Paymentmodal.findOne({ bookingId: bookingid });
+      console.log(payment)
+      booking.pendingAmount = 0;
+      booking.amountPaid = booking.totalAmount;
+      booking.paymentDetails = {
+        method: paymentMethod,
+        status: "paid",
+      };
+      booking.RoomNo.push(roomno);
+      if (booking.pendingAmount > 0) {
+        await Cashmodel.create({
+          hotelId: booking.hotelId,
+          amount: booking.pendingAmount,
+          type: "booking",
+          remarks: "checkin pending amount payment",
+        });
+      }
       if (payment) {
         payment.pendingAmount = 0;
         payment.amountPaid = payment.totalAmount;
+        payment.paymentMethod = paymentMethod;
         await payment.save();
       }
+    }
 
+    // Handle checkout with extra charges
+    if (status === "checkout") {
+      let payment = await Paymentmodal.findOne({ bookingId: bookingid });
+      if (booking.pendingAmount > 0) {
+        await Cashmodel.create({
+          hotelId: booking.hotelId,
+          amount: booking.pendingAmount,
+          type: "booking",
+          remarks: "checkout pending amount payment",
+        });
+      }
+      if (payment) {
+        payment.pendingAmount = 0;
+        payment.amountPaid = payment.totalAmount;
+        payment.status = "paid";
+        await payment.save();
+      }
+      booking.RoomNo = [];
       if (booking.paymentDetails.status === "paid") {
         booking.pendingAmount = 0;
       }

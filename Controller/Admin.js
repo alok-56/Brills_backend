@@ -44,6 +44,10 @@ const LoginAdmin = async (req, res, next) => {
       Email: Email,
       Password: Password,
     });
+
+    if (admincheck.Blocked) {
+      return next(new AppErr("You are blocked! Contact head", 440));
+    }
     if (!admincheck) {
       return next(
         new AppErr("Admin Not Found! Invailed Email or Password", 440)
@@ -71,7 +75,7 @@ const UpdateAdmin = async (req, res, next) => {
     if (err.errors.length > 0) {
       return next(new AppErr(err.errors[0].msg, 403));
     }
-    let { Name, Email, Password, Permission, Hotel } = req.body;
+    let { Name, Email, Password, Permission, Hotel, Blocked } = req.body;
 
     let { id } = req.params;
     if (!id) {
@@ -103,6 +107,7 @@ const UpdateAdmin = async (req, res, next) => {
     if (Password) updateData.Password = Password;
     if (Permission) updateData.Permission = Permission;
     if (Hotel) updateData.Hotel = [...new Set(Hotel)];
+    updateData.Blocked = Blocked;
 
     let updateHotel = await Adminmodel.findByIdAndUpdate(
       id,
@@ -161,11 +166,21 @@ const GetAdminById = async (req, res, next) => {
 const GetOwnProfile = async (req, res, next) => {
   try {
     let admin = await Adminmodel.findById(req.admin).populate("Hotel");
+
+    if (!admin) {
+      return next(new AppErr("Admin not found", 404));
+    }
+
+    // Filter active hotels
+    const activeHotels = Array.isArray(admin.Hotel)
+      ? admin.Hotel.filter((hotel) => hotel.isactive)
+      : [];
+
     return res.status(200).json({
       status: true,
       code: 200,
-      message: "Admin fetched successfully",
-      data: admin,
+      message: "Active hotels fetched successfully",
+      data: activeHotels,
     });
   } catch (error) {
     return next(new AppErr(error.message, 500));
