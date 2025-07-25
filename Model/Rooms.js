@@ -21,6 +21,7 @@ const RoomSchema = new mongoose.Schema({
   ],
   refundable: { type: Boolean, default: false },
   availability: { type: Number, default: 0 },
+  roomno: [],
 });
 
 const Roommodal = mongoose.model("Rooms", RoomSchema);

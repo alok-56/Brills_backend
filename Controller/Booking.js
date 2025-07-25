@@ -435,6 +435,8 @@ const OfflineBooking = async (req, res, next) => {
       taxAmount,
       totalAmount,
       userId,
+      paymentstatus,
+      paymentMethod,
     } = req.body;
 
     if (!userInfo || !userInfo.length) {
@@ -485,12 +487,18 @@ const OfflineBooking = async (req, res, next) => {
       discountAmount: discountAmount || 0,
       taxAmount: taxAmount || 0,
       totalAmount: totalAmount,
-      pendingAmount: 0,
-      amountPaid: totalAmount,
-      paymentDetails: {
-        method: "Cash",
-        status: "paid",
-      },
+      pendingAmount: paymentstatus === "Paid" ? 0 : totalAmount,
+      amountPaid: paymentstatus === "Paid" ? totalAmount : 0,
+      paymentDetails:
+        paymentstatus === "Paid"
+          ? {
+              method: paymentMethod,
+              status: "paid",
+            }
+          : {
+              method: "",
+              status: "pending",
+            },
       status: "booked",
       statusHistory: [
         {
@@ -508,16 +516,16 @@ const OfflineBooking = async (req, res, next) => {
       hotelId: hotelId,
       bookingId: bookingroom._id,
       merchantTransactionId: transactionid,
-      paymentMethod: "Cash",
+      paymentMethod: paymentMethod,
       tax: taxAmount || 0,
       addOnsAmount: addOns
         ? addOns.reduce((sum, addon) => sum + addon.cost, 0)
         : 0,
       totalAmount: totalAmount,
-      amountPaid: totalAmount,
-      pendingAmount: 0,
+      amountPaid: paymentstatus === "Paid" ? totalAmount : 0,
+      pendingAmount: paymentstatus === "Paid" ? 0 : totalAmount,
       discountAmount: discountAmount || 0,
-      status: "paid",
+      status: paymentstatus === "Paid" ? "paid" : "pending",
     };
 
     let paymentcreate = await Paymentmodal.create(paymentData);
@@ -828,9 +836,10 @@ const GetBookingStatusHistory = async (req, res, next) => {
           name: booking.userInfo?.[0]?.name || "N/A",
           email: booking.userInfo?.[0]?.email || "N/A",
           phone: booking.userInfo?.[0]?.phone || "N/A",
-          room: "N/A", 
+          room: "N/A",
           status: statusEntry.status || "N/A",
-          timestamp: moment(statusEntry.timestamp).format("YYYY-MM-DD HH:mm") || "N/A",
+          timestamp:
+            moment(statusEntry.timestamp).format("YYYY-MM-DD HH:mm") || "N/A",
           note: statusEntry.note || "N/A",
           preference: booking.userInfo?.[0]?.preference || "N/A",
           address: booking.userInfo?.[0]?.address || "India",
@@ -849,7 +858,6 @@ const GetBookingStatusHistory = async (req, res, next) => {
   }
 };
 
-
 module.exports = {
   BookRoom,
   ValidatePayment,
@@ -862,5 +870,5 @@ module.exports = {
   CreateAddons,
   UpdateAddon,
   DeleteAddon,
-  GetBookingStatusHistory
+  GetBookingStatusHistory,
 };

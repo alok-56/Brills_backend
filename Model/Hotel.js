@@ -35,6 +35,7 @@ const HotelSchema = new mongoose.Schema(
       hotel: [{ url: String, caption: String }],
       rooms: [{ url: String, roomType: String }],
       facilities: [{ url: String, caption: String }],
+      document: [{ url: String, caption: String }],
     },
 
     // Policies
