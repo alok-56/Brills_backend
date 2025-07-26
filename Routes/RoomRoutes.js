@@ -8,6 +8,7 @@ const {
   getRoomById,
   updateRoom,
   deleteRoom,
+  getAvailableRoomNumbers,
 } = require("../Controller/Rooms");
 
 const Roomroutes = express.Router();
@@ -29,5 +30,6 @@ Roomroutes.get("/search", searchAvailableRoomTypes);
 Roomroutes.get("/:id", Islogin, getRoomById);
 Roomroutes.patch("/update/:id", Islogin, updateRoom);
 Roomroutes.delete("/delete/:id", Islogin, deleteRoom);
+Roomroutes.get("/available/room", Islogin, getAvailableRoomNumbers);
 
 module.exports = Roomroutes;

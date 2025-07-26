@@ -138,7 +138,7 @@ const deleteRoom = async (req, res, next) => {
 //       b.roomId.map((id) => id.toString())
 //     );
 
-//     const roomTypeBookingCounts = {}; 
+//     const roomTypeBookingCounts = {};
 
 //     for (let room of roomTypes) {
 //       const count = bookedRoomIds.filter(
@@ -208,6 +208,7 @@ const searchAvailableRoomTypes = async (req, res, next) => {
 
     const bookings = await BookingModel.find({
       hotelId,
+      status: { $in: ["booked", "checkin"] },
       checkInDate: { $lt: end },
       checkOutDate: { $gt: start },
     }).select("roomId");
@@ -261,6 +262,68 @@ const searchAvailableRoomTypes = async (req, res, next) => {
   }
 };
 
+const getAvailableRoomNumbers = async (req, res, next) => {
+  try {
+    const { roomId, checkInDate, checkOutDate } = req.query;
+
+    if (!roomId || !checkInDate || !checkOutDate) {
+      return res.status(400).json({
+        status: false,
+        message: "roomId, checkInDate, and checkOutDate are required",
+      });
+    }
+
+    const start = new Date(checkInDate);
+    const end = new Date(checkOutDate);
+
+    if (isNaN(start) || isNaN(end) || start >= end) {
+      return res.status(400).json({
+        status: false,
+        message: "Invalid date range",
+      });
+    }
+
+    // 1. Get the list of all room numbers for that roomId
+    const room = await RoomModel.findById(roomId);
+    if (!room) {
+      return res.status(404).json({
+        status: false,
+        message: "Room type not found",
+      });
+    }
+
+    const allRoomNumbers = room.roomno;
+
+    // 2. Get bookings with overlapping dates & same roomId
+    const overlappingBookings = await BookingModel.find({
+      roomId,
+      status: { $in: ["booked", "checkin"] },
+      checkInDate: { $lt: end },
+      checkOutDate: { $gt: start },
+    }).select("RoomNo");
+
+    // 3. Collect all booked room numbers from those bookings
+    const bookedRoomNumbers = overlappingBookings.flatMap((b) => b.RoomNo);
+
+    // 4. Filter out booked numbers
+    const availableRoomNumbers = allRoomNumbers.filter(
+      (rn) => !bookedRoomNumbers.includes(rn)
+    );
+
+    return res.status(200).json({
+      status: true,
+      message: "Available room numbers fetched",
+      data: availableRoomNumbers,
+    });
+  } catch (error) {
+    console.error("Error getting available room numbers:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
   createRoom,
@@ -269,4 +332,5 @@ module.exports = {
   updateRoom,
   deleteRoom,
   searchAvailableRoomTypes,
+  getAvailableRoomNumbers,
 };

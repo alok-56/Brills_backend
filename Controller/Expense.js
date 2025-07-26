@@ -3,6 +3,8 @@ const { validationResult } = require("express-validator");
 const mongoose = require("mongoose");
 const ExpenseModel = require("../Model/Expense");
 const AppErr = require("../Helper/AppError");
+const Cashmodel = require("../Model/Cash");
+const HotelModel = require("../Model/Hotel");
 
 // CREATE - Add new expense
 const CreateExpense = async (req, res, next) => {
@@ -32,6 +34,15 @@ const CreateExpense = async (req, res, next) => {
     }
 
     let expense = await ExpenseModel.create(req.body);
+
+    if (paymentMethod === "Cash") {
+      let res = await Cashmodel.create({
+        hotelId: hotelId,
+        amount: amount,
+        type: "expense",
+        remarks: `While adding expence ${expenseName}`,
+      });
+    }
 
     return res.status(200).json({
       status: true,
@@ -372,6 +383,80 @@ const UpdateExpenseStatus = async (req, res, next) => {
   }
 };
 
+// current cash
+const Hotelwisecash = async (req, res, next) => {
+  try {
+    // Get all hotels
+    const hotels = await HotelModel.find();
+
+    // Get all cash entries
+    const cashEntries = await Cashmodel.find().sort({ createdAt: -1 });
+
+    // Group cash entries by hotelId
+    const cashMap = {};
+
+    for (const entry of cashEntries) {
+      const hotelId = entry.hotelId.toString();
+
+      if (!cashMap[hotelId]) {
+        cashMap[hotelId] = {
+          bookingCash: 0,
+          expenseCash: 0,
+          cashDetails: [],
+        };
+      }
+
+      if (entry.type === "booking") {
+        cashMap[hotelId].bookingCash += entry.amount;
+      } else if (entry.type === "expense") {
+        cashMap[hotelId].expenseCash += entry.amount;
+      }
+
+      // Push details for every entry
+      cashMap[hotelId].cashDetails.push({
+        _id: entry._id,
+        type: entry.type,
+        amount: entry.amount,
+        remarks: entry.remarks,
+        createdAt: entry.createdAt,
+      });
+    }
+
+    // Prepare final response
+    const response = hotels.map((hotel) => {
+      const hotelId = hotel._id.toString();
+      const cash = cashMap[hotelId] || {
+        bookingCash: 0,
+        expenseCash: 0,
+        cashDetails: [],
+      };
+
+      return {
+        hotelId: hotel._id,
+        hotelName: hotel.hotelName,
+        bookingCash: cash.bookingCash,
+        expenseCash: cash.expenseCash,
+        availableCash: cash.bookingCash - cash.expenseCash,
+        cashDetails: cash.cashDetails,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Hotel-wise cash summary with details",
+      data: response,
+    });
+  } catch (error) {
+    console.error("Hotelwisecash error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+
 module.exports = {
   CreateExpense,
   GetAllExpenses,
@@ -381,4 +466,5 @@ module.exports = {
   GetExpenseStatistics,
   GetExpensesByDateRange,
   UpdateExpenseStatus,
+  Hotelwisecash,
 };

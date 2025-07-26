@@ -535,6 +535,15 @@ const OfflineBooking = async (req, res, next) => {
     bookingroom.paymentDetails.paymentId = paymentcreate._id;
     await bookingroom.save();
 
+    if (paymentstatus === "Paid" && paymentMethod === "Cash") {
+      let res = await Cashmodel.create({
+        hotelId: bookingroom.hotelId,
+        amount: bookingroom.totalAmount,
+        type: "booking",
+        remarks: "While booking rooms",
+      });
+    }
+
     return res.status(200).json({
       status: true,
       code: 200,
@@ -558,6 +567,7 @@ const UpdateBookingstatus = async (req, res, next) => {
 
     // Validate status
     const validStatuses = [
+      "assignRoom",
       "collectPayment",
       "pending",
       "cancelled",
@@ -572,7 +582,7 @@ const UpdateBookingstatus = async (req, res, next) => {
     }
 
     // Update booking status
-    if (status !== "collectPayment") {
+    if (status !== "collectPayment" && status !== "assignRoom") {
       booking.status = status;
       booking.statusHistory.push({
         status: status,
@@ -586,46 +596,60 @@ const UpdateBookingstatus = async (req, res, next) => {
       booking.cancellation.isCancelled = true;
       booking.cancellation.cancelDate = new Date();
       booking.cancellation.cancelledBy = "admin";
-      // You might want to calculate cancel fee and refund amount here
+    }
+
+    if (status === "assignRoom") {
+      booking.RoomNo.push(roomno);
     }
 
     if (status === "collectPayment") {
       let payment = await Paymentmodal.findOne({ bookingId: bookingid });
-      console.log(payment)
-      booking.pendingAmount = 0;
-      booking.amountPaid = booking.totalAmount;
-      booking.paymentDetails = {
-        method: paymentMethod,
-        status: "paid",
-      };
-      booking.RoomNo.push(roomno);
-      if (booking.pendingAmount > 0) {
-        await Cashmodel.create({
-          hotelId: booking.hotelId,
-          amount: booking.pendingAmount,
-          type: "booking",
-          remarks: "checkin pending amount payment",
-        });
-      }
-      if (payment) {
-        payment.pendingAmount = 0;
-        payment.amountPaid = payment.totalAmount;
-        payment.paymentMethod = paymentMethod;
-        await payment.save();
+      if (booking.status === "booked") {
+        if (booking.pendingAmount > 0 && paymentMethod === "Cash") {
+          let res = await Cashmodel.create({
+            hotelId: booking.hotelId,
+            amount: booking.pendingAmount,
+            type: "booking",
+            remarks: "checkin pending amount payment",
+          });
+        }
+        booking.pendingAmount = 0;
+        booking.amountPaid = booking.totalAmount;
+        booking.paymentDetails = {
+          method: paymentMethod,
+          status: "paid",
+        };
+        booking.RoomNo.push(roomno);
+
+        if (payment) {
+          payment.pendingAmount = 0;
+          payment.amountPaid = payment.totalAmount;
+          payment.paymentMethod = paymentMethod;
+          await payment.save();
+        }
+      } else {
+        if (booking.pendingAmount > 0 && paymentMethod === "Cash") {
+          let res = await Cashmodel.create({
+            hotelId: booking.hotelId,
+            amount: booking.pendingAmount,
+            type: "booking",
+            remarks: "checkin pending amount payment",
+          });
+        }
+        booking.pendingAmount = 0;
+        booking.amountPaid = booking.totalAmount;
+
+        if (payment) {
+          payment.pendingAmount = 0;
+          payment.amountPaid = payment.totalAmount;
+          payment.paymentMethod = paymentMethod;
+          await payment.save();
+        }
       }
     }
 
-    // Handle checkout with extra charges
     if (status === "checkout") {
       let payment = await Paymentmodal.findOne({ bookingId: bookingid });
-      if (booking.pendingAmount > 0) {
-        await Cashmodel.create({
-          hotelId: booking.hotelId,
-          amount: booking.pendingAmount,
-          type: "booking",
-          remarks: "checkout pending amount payment",
-        });
-      }
       if (payment) {
         payment.pendingAmount = 0;
         payment.amountPaid = payment.totalAmount;
@@ -801,7 +825,6 @@ const UpdateAddon = async (req, res, next) => {
     return next(new AppErr(error.message, 500));
   }
 };
-
 // delete addons
 
 const DeleteAddon = async (req, res, next) => {

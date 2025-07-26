@@ -94,6 +94,7 @@ const BookingSchema = new mongoose.Schema(
       type: String,
       enum: [
         "collectPayment",
+        "assignRoom",
         "pending",
         "cancelled",
         "failed",

@@ -13,7 +13,9 @@ const getCounts = async (req, res) => {
     const hotelFilter = hotelIds
       ? {
           _id: {
-            $in: hotelIds.split(",").map((id) => new mongoose.Types.ObjectId(id)),
+            $in: hotelIds
+              .split(",")
+              .map((id) => new mongoose.Types.ObjectId(id)),
           },
         }
       : {};
@@ -31,7 +33,11 @@ const getCounts = async (req, res) => {
     const now = new Date();
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0); // last day of previous month
     lastMonthEnd.setHours(23, 59, 59, 999);
-    const lastMonthStart = new Date(lastMonthEnd.getFullYear(), lastMonthEnd.getMonth(), 1);
+    const lastMonthStart = new Date(
+      lastMonthEnd.getFullYear(),
+      lastMonthEnd.getMonth(),
+      1
+    );
     lastMonthStart.setHours(0, 0, 0, 0);
 
     // BOOKINGS
@@ -133,7 +139,6 @@ const getCounts = async (req, res) => {
   }
 };
 
-
 // controllers/analyticsController.js
 const getRevenueVsBooking = async (req, res) => {
   try {
@@ -162,7 +167,7 @@ const getRevenueVsBooking = async (req, res) => {
     start.setDate(end.getDate() - (days || 0));
 
     const hotelFilter = hotelIds
-      ? hotelIds.split(",").map((id) =>new mongoose.Types.ObjectId(id))
+      ? hotelIds.split(",").map((id) => new mongoose.Types.ObjectId(id))
       : [];
 
     const match = {
@@ -261,7 +266,7 @@ const getDailyBookings = async (req, res) => {
     start.setDate(end.getDate() - days);
 
     const hotelFilter = hotelIds
-      ? hotelIds.split(",").map((id) =>new mongoose.Types.ObjectId(id))
+      ? hotelIds.split(",").map((id) => new mongoose.Types.ObjectId(id))
       : [];
 
     const match = {
@@ -382,7 +387,7 @@ const GetRoomOccupancyReport = async (req, res, next) => {
       hotelId: { $in: hotelIdArray },
       checkInDate: { $lt: end.toDate() },
       checkOutDate: { $gt: start.toDate() },
-      status: { $in: ["booked", "checkin", "checkout"] },
+      status: { $in: ["booked", "checkin",] },
     }).select("hotelId roomId checkInDate checkOutDate");
 
     const roomData = {};
@@ -440,14 +445,16 @@ const getBookingSummary = async (req, res) => {
   try {
     const { from, to, page = 1, limit = 10, hotelId } = req.query;
 
-   const startDate = from ? new Date(from) : new Date("2024-01-01");
-const endDate = to ? new Date(new Date(to).setHours(23, 59, 59, 999)) : new Date();
-
+    const startDate = from ? new Date(from) : new Date("2024-01-01");
+    const endDate = to
+      ? new Date(new Date(to).setHours(23, 59, 59, 999))
+      : new Date();
+    console.log(req.branch);
 
     // Common filter for both bookings and recentBookings
     const baseFilter = {
       createdAt: { $gte: startDate, $lte: endDate },
-      hotelId:req.branch
+      hotelId: req.branch,
     };
     if (hotelId && hotelId !== "all") {
       baseFilter.hotelId = hotelId;
@@ -457,19 +464,29 @@ const endDate = to ? new Date(new Date(to).setHours(23, 59, 59, 999)) : new Date
     const bookings = await BookingModel.find(baseFilter);
 
     const confirmedBookings = bookings.filter(
-      (b) => b.status === "booked" || b.status === "checkin" || b.status === "checkout"
+      (b) =>
+        b.status === "booked" ||
+        b.status === "checkin" ||
+        b.status === "checkout"
     );
     const cancelledBookings = bookings.filter((b) => b.status === "cancelled");
 
     const totalBookings = bookings.length;
-    const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+    const totalRevenue = bookings.reduce(
+      (sum, b) => sum + (b.totalAmount || 0),
+      0
+    );
     const avgBookingValue = totalBookings ? totalRevenue / totalBookings : 0;
 
     const totalBookingsGrowth = 18;
     const avgBookingValueGrowth = 8;
 
-    const confirmationRate = totalBookings ? (confirmedBookings.length / totalBookings) * 100 : 0;
-    const cancellationRate = totalBookings ? (cancelledBookings.length / totalBookings) * 100 : 0;
+    const confirmationRate = totalBookings
+      ? (confirmedBookings.length / totalBookings) * 100
+      : 0;
+    const cancellationRate = totalBookings
+      ? (cancelledBookings.length / totalBookings) * 100
+      : 0;
 
     // 2️⃣ Monthly Trends
     const monthlyTrendsMap = new Map();
@@ -498,7 +515,9 @@ const endDate = to ? new Date(new Date(to).setHours(23, 59, 59, 999)) : new Date
     });
 
     const monthlyTrends = Array.from(monthlyTrendsMap.values()).sort(
-      (a, b) => new Date(`${a.monthName} 1, ${a.year}`) - new Date(`${b.monthName} 1, ${b.year}`)
+      (a, b) =>
+        new Date(`${a.monthName} 1, ${a.year}`) -
+        new Date(`${b.monthName} 1, ${b.year}`)
     );
 
     for (let i = 1; i < monthlyTrends.length; i++) {
@@ -594,7 +613,6 @@ const endDate = to ? new Date(new Date(to).setHours(23, 59, 59, 999)) : new Date
   }
 };
 
-
 // Payment Report
 
 module.exports = {
@@ -602,5 +620,5 @@ module.exports = {
   getCounts,
   getRevenueVsBooking,
   getDailyBookings,
-  getBookingSummary
+  getBookingSummary,
 };

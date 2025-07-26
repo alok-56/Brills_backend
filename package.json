@@ -28,6 +28,7 @@
     "multer-storage-cloudinary": "^4.0.0",
     "nodmeon": "^0.0.1-security",
     "sha256": "^0.2.0",
+    "sharp": "^0.34.3",
     "uniqid": "^5.4.0",
     "xss": "^1.0.15"
   },

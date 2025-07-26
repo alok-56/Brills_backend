@@ -9,10 +9,12 @@ const {
   GetExpenseStatistics,
   GetExpensesByDateRange,
   UpdateExpenseStatus,
+  Hotelwisecash,
 } = require("../Controller/Expense");
 
 const ExpenseRoutes = express.Router();
 
+ExpenseRoutes.get("/cash", Islogin, Hotelwisecash);
 ExpenseRoutes.post("/create", Islogin, CreateExpense);
 ExpenseRoutes.get("/all", Islogin, GetAllExpenses);
 ExpenseRoutes.get("/:id", Islogin, GetExpenseById);
