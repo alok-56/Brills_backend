@@ -438,6 +438,8 @@ const OfflineBooking = async (req, res, next) => {
       userId,
       paymentstatus,
       paymentMethod,
+      pendingAmount,
+      amountPaid
     } = req.body;
 
     if (!userInfo || !userInfo.length) {
@@ -488,8 +490,8 @@ const OfflineBooking = async (req, res, next) => {
       discountAmount: discountAmount || 0,
       taxAmount: taxAmount || 0,
       totalAmount: totalAmount,
-      pendingAmount: paymentstatus === "Paid" ? 0 : totalAmount,
-      amountPaid: paymentstatus === "Paid" ? totalAmount : 0,
+      pendingAmount: paymentstatus === "Paid" ? pendingAmount : totalAmount,
+      amountPaid: paymentstatus === "Paid" ? amountPaid : 0,
       paymentDetails:
         paymentstatus === "Paid"
           ? {
