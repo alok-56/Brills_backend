@@ -61,7 +61,7 @@ const BookRoom = async (req, res, next) => {
       return next(new AppErr(err.errors[0].msg, 403));
     }
 
-    let bookingid = uniqid();
+    let bookingid = Date.now().toString().slice(-6);
     let transactionid = uniqid();
     let {
       hotelId,
@@ -76,6 +76,7 @@ const BookRoom = async (req, res, next) => {
       taxAmount,
       totalAmount,
       pendingAmount,
+      amountPaid,
       userId,
     } = req.body;
 
@@ -133,37 +134,32 @@ const BookRoom = async (req, res, next) => {
       discountAmount: discountAmount || 0,
       taxAmount: taxAmount || 0,
       totalAmount: totalAmount,
-      pendingAmount: pendingAmount || 0,
+      pendingAmount: pendingAmount,
+      amountPaid: amountPaid,
+      bookingsource: "website",
       paymentDetails: {
-        method: "Online",
+        method: "phonepe",
         status: "pending",
       },
       status: "pending",
-      statusHistory: [
-        {
-          status: "pending",
-          timestamp: new Date(),
-          note: "Booking created",
-        },
-      ],
+      statusHistory: [],
     };
-
     // Create booking (in transaction)
     let bookingroom = await Bookingmodal.create([bookingData], { session });
 
     // Create payment (in transaction)
     let paymentData = {
       hotelId: hotelId,
-      bookingId: bookingroom[0]._id,
+      bookingId: bookingroom._id,
       merchantTransactionId: transactionid,
-      paymentMethod: "UPI", 
+      paymentMethod: "phonepe",
       tax: taxAmount || 0,
       addOnsAmount: addOns
         ? addOns.reduce((sum, addon) => sum + addon.cost, 0)
         : 0,
       totalAmount: totalAmount,
       amountPaid: 0,
-      pendingAmount: totalAmount,
+      pendingAmount: pendingAmount,
       discountAmount: discountAmount || 0,
       status: "pending",
     };
@@ -294,10 +290,6 @@ const ValidatePayment = async (req, res, next) => {
             note: "Payment successful",
           });
 
-          // Update room availability (if needed)
-          // Note: You might want to implement a booking date system here
-          // based on your room availability logic
-
           await payment.save();
           await booking.save();
 
@@ -308,7 +300,6 @@ const ValidatePayment = async (req, res, next) => {
             data: response.data,
           });
         } else {
-          // Update payment as failed
           let payment = await Paymentmodal.findOne({
             merchantTransactionId: merchantTransactionId,
           });
@@ -744,7 +735,6 @@ const GetPayment = async (req, res, next) => {
     return next(new AppErr(error.message, 500));
   }
 };
-
 
 // Get Payment By Id
 const GetPaymentById = async (req, res, next) => {

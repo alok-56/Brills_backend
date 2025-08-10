@@ -1,8 +1,9 @@
 const { validationResult } = require("express-validator");
 const AppErr = require("../Helper/AppError");
-const RoomModel = require("../Model/Rooms");
+
 const HotelModel = require("../Model/Hotel");
 const BookingModel = require("../Model/Booking");
+const Roommodal = require("../Model/Rooms");
 
 // CREATE Room
 const createRoom = async (req, res, next) => {
@@ -14,7 +15,7 @@ const createRoom = async (req, res, next) => {
     const hotel = await HotelModel.findById(hotelId);
     if (!hotel) return next(new AppErr("Hotel not found", 404));
 
-    const room = await RoomModel.create(req.body);
+    const room = await Roommodal.create(req.body);
 
     return res.status(201).json({
       success: true,
@@ -29,7 +30,7 @@ const createRoom = async (req, res, next) => {
 // READ All Rooms
 const getAllRooms = async (req, res, next) => {
   try {
-    const rooms = await RoomModel.find({
+    const rooms = await Roommodal.find({
       hotelId: { $in: req.branch },
     }).populate("hotelId");
     return res.status(200).json({
@@ -45,7 +46,7 @@ const getAllRooms = async (req, res, next) => {
 // READ Room by ID
 const getRoomById = async (req, res, next) => {
   try {
-    const room = await RoomModel.findById(req.params.id).populate("hotelId");
+    const room = await Roommodal.findById(req.params.id).populate("hotelId");
     if (!room) return next(new AppErr("Room not found", 404));
 
     return res.status(200).json({
@@ -69,7 +70,7 @@ const updateRoom = async (req, res, next) => {
       if (!hotelExists) return next(new AppErr("Hotel not found", 404));
     }
 
-    const updatedRoom = await RoomModel.findByIdAndUpdate(roomId, updates, {
+    const updatedRoom = await Roommodal.findByIdAndUpdate(roomId, updates, {
       new: true,
       runValidators: true,
     });
@@ -89,7 +90,7 @@ const updateRoom = async (req, res, next) => {
 // DELETE Room
 const deleteRoom = async (req, res, next) => {
   try {
-    const room = await RoomModel.findByIdAndDelete(req.params.id);
+    const room = await Roommodal.findByIdAndDelete(req.params.id);
     if (!room) return next(new AppErr("Room not found", 404));
 
     return res.status(200).json({
@@ -204,7 +205,7 @@ const searchAvailableRoomTypes = async (req, res, next) => {
       });
     }
 
-    const roomTypes = await RoomModel.find({ hotelId });
+    const roomTypes = await Roommodal.find({ hotelId });
 
     const bookings = await BookingModel.find({
       hotelId,
@@ -351,7 +352,7 @@ const getAvailableRoomNumbers = async (req, res, next) => {
     }
 
     // 1. Get all rooms for given IDs
-    const rooms = await RoomModel.find({ _id: { $in: roomIds } });
+    const rooms = await Roommodal.find({ _id: { $in: roomIds } });
     if (!rooms.length) {
       return res.status(404).json({
         status: false,
