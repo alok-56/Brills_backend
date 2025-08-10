@@ -156,7 +156,7 @@ const BookRoom = async (req, res, next) => {
       hotelId: hotelId,
       bookingId: bookingroom[0]._id,
       merchantTransactionId: transactionid,
-      paymentMethod: "UPI", // Default for online payments
+      paymentMethod: "UPI", 
       tax: taxAmount || 0,
       addOnsAmount: addOns
         ? addOns.reduce((sum, addon) => sum + addon.cost, 0)
@@ -421,7 +421,7 @@ const OfflineBooking = async (req, res, next) => {
       return next(new AppErr(err.errors[0].msg, 403));
     }
 
-    let bookingid = uniqid();
+    let bookingid = Date.now().toString().slice(-6);
     let transactionid = uniqid();
     let {
       hotelId,
@@ -439,7 +439,9 @@ const OfflineBooking = async (req, res, next) => {
       paymentstatus,
       paymentMethod,
       pendingAmount,
-      amountPaid
+      amountPaid,
+      bookingSource,
+      bookingId,
     } = req.body;
 
     if (!userInfo || !userInfo.length) {
@@ -475,7 +477,10 @@ const OfflineBooking = async (req, res, next) => {
 
     // Create booking data
     const bookingData = {
-      bookingId: bookingid,
+      bookingId:
+        bookingSource === "walkin" || bookingSource === "website"
+          ? bookingid
+          : bookingId,
       hotelId: hotelId,
       roomId: roomId,
       userId: userId,
@@ -490,8 +495,9 @@ const OfflineBooking = async (req, res, next) => {
       discountAmount: discountAmount || 0,
       taxAmount: taxAmount || 0,
       totalAmount: totalAmount,
-      pendingAmount: paymentstatus === "Paid" ? pendingAmount : totalAmount,
-      amountPaid: paymentstatus === "Paid" ? amountPaid : 0,
+      pendingAmount: pendingAmount,
+      amountPaid: amountPaid,
+      bookingsource: bookingSource,
       paymentDetails:
         paymentstatus === "Paid"
           ? {
@@ -525,8 +531,8 @@ const OfflineBooking = async (req, res, next) => {
         ? addOns.reduce((sum, addon) => sum + addon.cost, 0)
         : 0,
       totalAmount: totalAmount,
-      amountPaid: paymentstatus === "Paid" ? totalAmount : 0,
-      pendingAmount: paymentstatus === "Paid" ? 0 : totalAmount,
+      amountPaid: amountPaid || 0,
+      pendingAmount: pendingAmount,
       discountAmount: discountAmount || 0,
       status: paymentstatus === "Paid" ? "paid" : "pending",
     };
@@ -560,7 +566,7 @@ const OfflineBooking = async (req, res, next) => {
 // Update Booking Status
 const UpdateBookingstatus = async (req, res, next) => {
   try {
-    let { status, bookingid, paymentMethod, roomno } = req.query;
+    let { status, bookingid, paymentMethod, roomno, amount } = req.query;
 
     let booking = await Bookingmodal.findById(bookingid);
     if (!booking) {
@@ -601,7 +607,13 @@ const UpdateBookingstatus = async (req, res, next) => {
     }
 
     if (status === "assignRoom") {
-      booking.RoomNo.push(roomno);
+      booking.RoomNo = [];
+      booking.RoomNo.push(
+        ...roomno
+          .toString()
+          .split(",")
+          .map((n) => n.trim())
+      );
     }
 
     if (status === "collectPayment") {
@@ -610,40 +622,51 @@ const UpdateBookingstatus = async (req, res, next) => {
         if (booking.pendingAmount > 0 && paymentMethod === "Cash") {
           let res = await Cashmodel.create({
             hotelId: booking.hotelId,
-            amount: booking.pendingAmount,
+            amount: amount,
             type: "booking",
             remarks: "checkin pending amount payment",
           });
         }
-        booking.pendingAmount = 0;
-        booking.amountPaid = booking.totalAmount;
+        booking.pendingAmount = Number(booking.pendingAmount) - Number(amount);
+        booking.amountPaid = Number(booking.amountPaid) + Number(amount);
         booking.paymentDetails = {
           method: paymentMethod,
-          status: "paid",
+          status:
+            Number(booking.pendingAmount) - Number(amount) > 0
+              ? "pending"
+              : "paid",
         };
-        booking.RoomNo.push(roomno);
+        booking.RoomNo = [];
+        booking.RoomNo.push(
+          ...roomno
+            .toString()
+            .split(",")
+            .map((n) => n.trim())
+        );
 
         if (payment) {
-          payment.pendingAmount = 0;
-          payment.amountPaid = payment.totalAmount;
+          payment.pendingAmount =
+            Number(payment.pendingAmount) - Number(amount);
+          payment.amountPaid = Number(payment.amountPaid) + Number(amount);
           payment.paymentMethod = paymentMethod;
           await payment.save();
         }
       } else {
-        if (booking.pendingAmount > 0 && paymentMethod === "Cash") {
+        if (Number(booking.pendingAmount) > 0 && paymentMethod === "Cash") {
           let res = await Cashmodel.create({
             hotelId: booking.hotelId,
-            amount: booking.pendingAmount,
+            amount: Number(amount),
             type: "booking",
             remarks: "checkin pending amount payment",
           });
         }
-        booking.pendingAmount = 0;
-        booking.amountPaid = booking.totalAmount;
+        booking.pendingAmount = Number(booking.pendingAmount) - Number(amount);
+        booking.amountPaid = Number(booking.amountPaid) + Number(amount);
 
         if (payment) {
-          payment.pendingAmount = 0;
-          payment.amountPaid = payment.totalAmount;
+          payment.pendingAmount =
+            Number(payment.pendingAmount) - Number(amount);
+          payment.amountPaid = Number(payment.amountPaid) + Number(amount);
           payment.paymentMethod = paymentMethod;
           await payment.save();
         }
@@ -680,7 +703,11 @@ const UpdateBookingstatus = async (req, res, next) => {
 // Get Payment
 const GetPayment = async (req, res, next) => {
   try {
-    let { status } = req.query;
+    let { status, page = 1, limit = 10 } = req.query;
+
+    // Convert to numbers
+    page = parseInt(page);
+    limit = parseInt(limit);
 
     let filter = {
       hotelId: { $in: req.branch },
@@ -690,20 +717,34 @@ const GetPayment = async (req, res, next) => {
       filter.status = status;
     }
 
+    // Count total documents for pagination
+    const totalPayments = await Paymentmodal.countDocuments(filter);
+
+    // Fetch paginated payments
     let payments = await Paymentmodal.find(filter)
       .populate("bookingId")
-      .populate("hotelId");
+      .populate("hotelId")
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       status: true,
       code: 200,
       message: "Payments fetched successfully",
       data: payments,
+      pagination: {
+        total: totalPayments,
+        page,
+        limit,
+        totalPages: Math.ceil(totalPayments / limit),
+      },
     });
   } catch (error) {
     return next(new AppErr(error.message, 500));
   }
 };
+
 
 // Get Payment By Id
 const GetPaymentById = async (req, res, next) => {

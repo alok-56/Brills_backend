@@ -24,8 +24,6 @@ BookingRoutes.get("/status-history", Islogin, GetBookingStatusHistory);
 BookingRoutes.get("/:id", Islogin, GetBookingById);
 BookingRoutes.patch("/update-status", Islogin, UpdateBookingstatus);
 
-
-
 // Payment Routes
 BookingRoutes.get("/payment/all", Islogin, GetPayment);
 BookingRoutes.get("/payment/:id", Islogin, GetPaymentById);

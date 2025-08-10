@@ -613,7 +613,7 @@ const getBookingSummary = async (req, res) => {
   }
 };
 
-// Payment Report
+
 
 module.exports = {
   GetRoomOccupancyReport,

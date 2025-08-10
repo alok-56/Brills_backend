@@ -68,6 +68,18 @@ const BookingSchema = new mongoose.Schema(
         cost: Number,
       },
     ],
+    bookingsource: {
+      type: String,
+      enum: [
+        "walkin",
+        "website",
+        "booking.com",
+        "agoda",
+        "expedia",
+        "makemytrip",
+        "oyo",
+      ],
+    },
 
     couponCode: { type: String },
     discountAmount: { type: Number, default: 0 },
