@@ -975,7 +975,6 @@ const GetMyBooking = async (req, res, next) => {
     }
 
     let bookings = await Bookingmodal.find({ userId: user._id })
-      .select("userId")
       .populate("paymentDetails.paymentId")
       .populate("roomId")
       .populate("hotelId");
