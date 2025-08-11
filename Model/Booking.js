@@ -26,6 +26,9 @@ const BookingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Users",
     },
+    number: {
+      type: Number,
+    },
 
     userInfo: [
       {

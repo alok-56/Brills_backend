@@ -77,7 +77,6 @@ const BookRoom = async (req, res, next) => {
       totalAmount,
       pendingAmount,
       amountPaid,
-      userId,
     } = req.body;
 
     if (!userInfo || !userInfo.length) {
@@ -105,13 +104,12 @@ const BookRoom = async (req, res, next) => {
     }
 
     // Create user if not exists
-    if (!userId) {
-      let existingUser = await Usermodel.findOne({ Number: phone });
-      if (!existingUser) {
-        await Usermodel.create({
-          Number: phone,
-        });
-      }
+    var userid;
+    userid = await Usermodel.findOne({ Number: phone });
+    if (!userid) {
+      userid = await Usermodel.create({
+        Number: phone,
+      });
     }
 
     // Calculate stay duration
@@ -122,7 +120,7 @@ const BookRoom = async (req, res, next) => {
       bookingId: bookingid,
       hotelId: hotelId,
       roomId: roomId,
-      userId: userId,
+      userId: userid._id,
       userInfo: userInfo,
       guests: guests || { adults: 1, children: 0 },
       checkInDate: new Date(checkInDate),
@@ -150,7 +148,7 @@ const BookRoom = async (req, res, next) => {
     // Create payment (in transaction)
     let paymentData = {
       hotelId: hotelId,
-      bookingId: bookingroom._id,
+      bookingId: bookingroom[0]._id,
       merchantTransactionId: transactionid,
       paymentMethod: "phonepe",
       tax: taxAmount || 0,
@@ -174,7 +172,6 @@ const BookRoom = async (req, res, next) => {
     await session.commitTransaction();
     session.endSession();
 
-    // Prepare payment payload
     const base64EncodedPayload = createPaymentPayload(
       transactionid,
       totalAmount,
@@ -203,6 +200,10 @@ const BookRoom = async (req, res, next) => {
         }
       )
       .then(async (response) => {
+        console.log(
+          "Payment initiated successfully:",
+          response.data.data.instrumentResponse.redirectInfo.url
+        );
         res.status(200).json({
           status: true,
           code: 200,
@@ -293,12 +294,9 @@ const ValidatePayment = async (req, res, next) => {
           await payment.save();
           await booking.save();
 
-          return res.status(200).json({
-            status: true,
-            code: 200,
-            message: "Payment Success",
-            data: response.data,
-          });
+          return res.redirect(
+            `${process.env.SUCCESS_URL}/${merchantTransactionId}`
+          );
         } else {
           let payment = await Paymentmodal.findOne({
             merchantTransactionId: merchantTransactionId,
@@ -327,21 +325,13 @@ const ValidatePayment = async (req, res, next) => {
             }
           }
 
-          return res.status(400).json({
-            status: false,
-            code: 400,
-            message: "Payment Failed",
-            data: response.data,
-          });
+          return res.redirect(
+            `${process.env.SUCCESS_URL}/${merchantTransactionId}`
+          );
         }
       })
       .catch(function (error) {
-        res.status(500).json({
-          status: false,
-          code: 500,
-          message: "Error validating payment",
-          data: error.message,
-        });
+        return res.redirect(process.env.FAILURE_URL);
       });
   } catch (error) {
     return next(new AppErr(error.message, 500));
@@ -426,7 +416,6 @@ const OfflineBooking = async (req, res, next) => {
       discountAmount,
       taxAmount,
       totalAmount,
-      userId,
       paymentstatus,
       paymentMethod,
       pendingAmount,
@@ -454,14 +443,14 @@ const OfflineBooking = async (req, res, next) => {
     }
 
     // Create user if not exists
-    if (!userId) {
-      let existingUser = await Usermodel.findOne({ Number: phone });
-      if (!existingUser) {
-        await Usermodel.create({
-          Number: phone,
-        });
-      }
+   var userid;
+    userid = await Usermodel.findOne({ Number: phone });
+    if (!userid) {
+      userid = await Usermodel.create({
+        Number: phone,
+      });
     }
+
 
     // Calculate stay duration
     const stayDuration = calculateStayDuration(checkInDate, checkOutDate);
@@ -474,7 +463,7 @@ const OfflineBooking = async (req, res, next) => {
           : bookingId,
       hotelId: hotelId,
       roomId: roomId,
-      userId: userId,
+      userId: userid._id,
       userInfo: userInfo,
       guests: guests || { adults: 1, children: 0 },
       checkInDate: new Date(checkInDate),
@@ -761,7 +750,6 @@ const GetPaymentById = async (req, res, next) => {
 };
 
 // create addons
-
 const CreateAddons = async (req, res, next) => {
   try {
     const { bookingId } = req.params;
@@ -817,7 +805,6 @@ const CreateAddons = async (req, res, next) => {
 };
 
 // update addons
-
 const UpdateAddon = async (req, res, next) => {
   try {
     const { bookingId } = req.params;
@@ -859,7 +846,6 @@ const UpdateAddon = async (req, res, next) => {
   }
 };
 // delete addons
-
 const DeleteAddon = async (req, res, next) => {
   try {
     const { bookingId } = req.params;
@@ -953,6 +939,58 @@ const GetBookingStatusHistory = async (req, res, next) => {
   }
 };
 
+// fetch booking by merchantTransactionId
+const GetBookingByMerchantTransactionId = async (req, res, next) => {
+  try {
+    const { merchantTransactionId } = req.params;
+
+    const booking = await Paymentmodal.findOne({
+      merchantTransactionId: merchantTransactionId,
+    }).populate("bookingId");
+
+    if (!booking) {
+      return next(new AppErr("Booking not found", 404));
+    }
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Booking fetched successfully",
+      data: booking,
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
+// Get My Booking
+const GetMyBooking = async (req, res, next) => {
+  try {
+    let user = await Usermodel.findOne({
+      Number: req.query.Number,
+    });
+
+    if (!user) {
+      return next(new AppErr("User not found", 404));
+    }
+
+    let bookings = await Bookingmodal.find({ userId: user._id })
+      .select("userId")
+      .populate("paymentDetails.paymentId")
+      .populate("roomId")
+      .populate("hotelId");
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Bookings fetched successfully",
+      data: bookings,
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
 module.exports = {
   BookRoom,
   ValidatePayment,
@@ -966,4 +1004,6 @@ module.exports = {
   UpdateAddon,
   DeleteAddon,
   GetBookingStatusHistory,
+  GetBookingByMerchantTransactionId,
+  GetMyBooking,
 };

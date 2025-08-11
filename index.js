@@ -14,6 +14,7 @@ const FileRouter = require("./Routes/FileUpload");
 const ReportRoutes = require("./Routes/ReportRoutes");
 const ExpenseRoutes = require("./Routes/expence");
 const UserwebRoutes = require("./Routes/userRoutes");
+const publicrouter = require("./Routes/Public");
 require("dotenv").config();
 DatabaseConnection();
 const app = express();
@@ -37,6 +38,7 @@ app.use("/api/v1/file", FileRouter);
 app.use("/api/v1/report", ReportRoutes);
 app.use("/api/v1/expenses", ExpenseRoutes);
 app.use("/api/v1/web", UserwebRoutes);
+app.use("/api/v1/public", publicrouter);
 
 // Not Found Route
 app.use("*", (req, res, next) => {

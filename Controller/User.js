@@ -35,9 +35,18 @@ const GetUserHotelById = async (req, res, next) => {
   }
 };
 
+// Create Contact Us
 
+// Get Contact us
 
+// Create B2B
+
+// Get B2B
+
+// send otp
+
+// verify otp and send token
 module.exports = {
   GetAllUserHotels,
-  GetUserHotelById
+  GetUserHotelById,
 };
