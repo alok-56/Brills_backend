@@ -13,6 +13,7 @@ const Usermodel = require("../Model/User");
 const BookingModel = require("../Model/Booking");
 const moment = require("moment");
 const Cashmodel = require("../Model/Cash");
+const StatusLogsmodel = require("../Model/Statusmaintain");
 
 // Create Payment Payload
 const createPaymentPayload = (
@@ -443,14 +444,13 @@ const OfflineBooking = async (req, res, next) => {
     }
 
     // Create user if not exists
-   var userid;
+    var userid;
     userid = await Usermodel.findOne({ Number: phone });
     if (!userid) {
       userid = await Usermodel.create({
         Number: phone,
       });
     }
-
 
     // Calculate stay duration
     const stayDuration = calculateStayDuration(checkInDate, checkOutDate);
@@ -523,14 +523,22 @@ const OfflineBooking = async (req, res, next) => {
     bookingroom.paymentDetails.paymentId = paymentcreate._id;
     await bookingroom.save();
 
-    if (paymentstatus === "Paid" && paymentMethod === "Cash") {
+    if (paymentstatus === "pending" && paymentMethod === "Cash") {
+      console.log(paymentstatus, paymentMethod);
       let res = await Cashmodel.create({
         hotelId: bookingroom.hotelId,
-        amount: bookingroom.totalAmount,
+        amount: amountPaid,
         type: "booking",
         remarks: "While booking rooms",
       });
     }
+
+    await StatusLogsmodel.create({
+      bookingid: bookingData.bookingId,
+      logtype: "Offline booking creation",
+      userid: req.admin,
+      description: "this log is created with generating offling booking",
+    });
 
     return res.status(200).json({
       status: true,
@@ -668,6 +676,14 @@ const UpdateBookingstatus = async (req, res, next) => {
     }
 
     await booking.save();
+
+    await StatusLogsmodel.create({
+      bookingid: booking.bookingId,
+      logtype: `Booking status update and status changed to ${status}`,
+      userid: req.admin,
+      description:
+        "this log is created with generating while updating  booking status",
+    });
 
     return res.status(200).json({
       status: true,

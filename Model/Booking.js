@@ -126,6 +126,7 @@ const BookingSchema = new mongoose.Schema(
         status: String,
         timestamp: { type: Date, default: Date.now },
         note: String,
+        updatedby: String,
       },
     ],
     RoomNo: [],

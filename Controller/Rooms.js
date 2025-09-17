@@ -209,7 +209,7 @@ const searchAvailableRoomTypes = async (req, res, next) => {
 
     const bookings = await BookingModel.find({
       hotelId,
-      status: { $in: ["booked", "checkin"] },
+      status: { $in: ["booked", "checkin", "pending"] },
       checkInDate: { $lt: end },
       checkOutDate: { $gt: start },
     }).select("roomId");

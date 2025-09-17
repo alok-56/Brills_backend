@@ -31,7 +31,7 @@ const loginValidation = [
 Adminroutes.post("/register", adminValidation, CreateAdmin);
 Adminroutes.post("/login", loginValidation, LoginAdmin);
 Adminroutes.patch("/update/:id", Islogin, adminValidation, UpdateAdmin);
-Adminroutes.get("/all", Islogin, GetAllAdmin);
+Adminroutes.get("/all", GetAllAdmin);
 Adminroutes.get("/profile", Islogin, GetOwnProfile);
 Adminroutes.get("/:id", Islogin, GetAdminById);
 Adminroutes.delete("/delete/:id", Islogin, DeleteAdmin);

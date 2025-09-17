@@ -2,6 +2,7 @@ const { validationResult } = require("express-validator");
 const AppErr = require("../Helper/AppError");
 const contactmodel = require("../Model/Contactus");
 const B2BContact = require("../Model/B2B");
+const StatusLogsmodel = require("../Model/Statusmaintain");
 
 const CreateContactUs = async (req, res, next) => {
   try {
@@ -95,9 +96,75 @@ const getAllB2BContacts = async (req, res) => {
   }
 };
 
+const Getalllogs = async (req, res, next) => {
+  try {
+    let { page = 1, limit = 10, bookingSearch } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+    const skip = (page - 1) * limit;
+
+    const query = {};
+
+    // if bookingSearch is given, match directly (since bookingid is already 8-digit string)
+    if (bookingSearch) {
+      query.bookingid = bookingSearch; // exact match
+    }
+
+    const pipeline = [
+      { $match: query },
+      {
+        $lookup: {
+          from: "admins", // collection name for Admin model
+          localField: "userid",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $project: {
+          bookingid: 1,
+          logtype: 1,
+          description: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          userid: {
+            _id: "$user._id",
+            Name: "$user.Name",
+          },
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+    ];
+
+    const data = await StatusLogsmodel.aggregate(pipeline);
+
+    // total count for pagination
+    const totalCountPipeline = [{ $match: query }, { $count: "count" }];
+    const countResult = await StatusLogsmodel.aggregate(totalCountPipeline);
+    const totalRecords = countResult.length > 0 ? countResult[0].count : 0;
+
+    res.json({
+      success: true,
+      page,
+      limit,
+      totalPages: Math.ceil(totalRecords / limit),
+      totalRecords,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 module.exports = {
   CreateContactUs,
   GetAllContactUs,
   createB2BContact,
   getAllB2BContacts,
+  Getalllogs,
 };
