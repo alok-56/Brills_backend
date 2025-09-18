@@ -57,6 +57,8 @@ const HotelSchema = new mongoose.Schema(
       taxIncluded: { type: Boolean },
     },
 
+    Guesttype: [String],
+
     // Safety
     covidMeasures: [String],
     fireSafety: { type: Boolean },
