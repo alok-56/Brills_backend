@@ -14,6 +14,7 @@ const {
   GetBookingStatusHistory,
   GetBookingByMerchantTransactionId,
   GetMyBooking,
+  UpdateBooking,
 } = require("../Controller/Booking");
 const Islogin = require("../Middleware/Islogin");
 const BookingRoutes = express.Router();
@@ -41,5 +42,7 @@ BookingRoutes.get(
 BookingRoutes.post("/:bookingId/addon", Islogin, CreateAddons);
 BookingRoutes.put("/:bookingId/addon", Islogin, UpdateAddon);
 BookingRoutes.delete("/:bookingId/addon", Islogin, DeleteAddon);
+
+BookingRoutes.patch("/bookingupdate", Islogin, UpdateBooking);
 
 module.exports = BookingRoutes;

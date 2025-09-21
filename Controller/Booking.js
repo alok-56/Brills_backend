@@ -1006,6 +1006,121 @@ const GetMyBooking = async (req, res, next) => {
   }
 };
 
+// Update Booking
+const UpdateBooking = async (req, res, next) => {
+  try {
+    const {
+      bookingId,
+      checkIn,
+      checkOut,
+      guestName,
+      phoneNumber,
+      email,
+      roomno,
+      amount,
+      amountCollected,
+      pendingamount,
+      userifo,
+    } = req.body;
+    console.log(req.body)
+
+    let booking = await Bookingmodal.findById(bookingId);
+    if (!booking) {
+      return next(new AppErr("Booking not found", 404));
+    }
+
+    // Update check-in/out
+    if (checkIn) booking.checkInDate = new Date(checkIn);
+    if (checkOut) booking.checkOutDate = new Date(checkOut);
+
+    if (checkIn || checkOut) {
+      booking.stayDuration = calculateStayDuration(
+        booking.checkInDate,
+        booking.checkOutDate
+      );
+    }
+
+    // Update guest info
+    if (guestName || phoneNumber || email) {
+      booking.userInfo = [
+        {
+          name: guestName || booking.userInfo[0]?.name || "",
+          phone: phoneNumber || booking.userInfo[0]?.phone || "",
+          email: email || booking.userInfo[0]?.email || "",
+        },
+      ];
+
+      if (phoneNumber) {
+        let user = await Usermodel.findOne({ Number: phoneNumber });
+        if (!user) user = await Usermodel.create({ Number: phoneNumber });
+        booking.userId = user._id;
+      }
+    }
+
+    // Update room numbers
+    if (roomno && roomno.length) {
+      booking.RoomNo = [];
+      booking.RoomNo.push(...roomno.map((n) => n.toString().trim()));
+    }
+
+    // Update amounts
+    if (amount !== undefined) booking.totalAmount = Number(amount);
+    if (amountCollected !== undefined)
+      booking.amountPaid = Number(amountCollected);
+    if (pendingamount !== undefined)
+      booking.pendingAmount = Number(pendingamount);
+
+    if (userifo && userifo.length) {
+      booking.extraUserInfo = userifo;
+    }
+
+    // Update payment record
+    let payment = await Paymentmodal.findOne({ bookingId: booking._id });
+    if (payment) {
+      if (amount !== undefined) payment.totalAmount = Number(amount);
+      if (amountCollected !== undefined)
+        payment.amountPaid = Number(amountCollected);
+      if (pendingamount !== undefined)
+        payment.pendingAmount = Number(pendingamount);
+
+      // Auto mark as paid if pendingamount = 0
+      if (Number(pendingamount) === 0) {
+        payment.status = "paid";
+        booking.paymentDetails.status = "paid";
+      } else {
+        payment.status = "pending";
+        booking.paymentDetails.status = "pending";
+      }
+
+      await payment.save();
+    }
+
+    // Auto update booking status if pendingamount = 0
+    if (Number(pendingamount) === 0) {
+      booking.status = "booked";
+    }
+
+    await booking.save();
+
+    // Log update
+    await StatusLogsmodel.create({
+      bookingid: booking.bookingId,
+      logtype: "Booking updated",
+      userid: req.admin,
+      description: `Booking updated, pendingAmount now ${pendingamount}`,
+    });
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Booking updated successfully",
+      data: booking,
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
 module.exports = {
   BookRoom,
   ValidatePayment,
@@ -1021,4 +1136,5 @@ module.exports = {
   GetBookingStatusHistory,
   GetBookingByMerchantTransactionId,
   GetMyBooking,
+  UpdateBooking
 };
